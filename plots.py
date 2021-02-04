@@ -311,7 +311,7 @@ def wigner(rho, obj='all', ind=None, x=np.linspace(-3,3,200), y=np.linspace(-3,3
     return cont
 
 
-def sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3], incl_wsb=True, **kwargs):
+def sb_expect(times, expect, sb, Nt, H_args, convergent, coupling, xlim=None, ylim=None, figsize=[15,3], incl_wsb=True, **kwargs):
     """
     Plots qubit's and cavity's expected occupation number from simulation
     for sideband transitions.
@@ -328,6 +328,8 @@ def sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, fig
         Number of drive tones
     H_args : dict
         Parameters for time-dependent Hamiltonians and collapse operators
+    convergent : bool
+        Whether to use convergent method or not
     coupling : array-like
         Normalized coupling strength of the drive tone(s) over time
     xlim : list, tuple
@@ -396,23 +398,23 @@ def sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, fig
     else:
         ax1.set_ylim(ylim)
     
-    if ('convergent' in H_args.keys() and not H_args['convergent']):
+    if convergent == False:
         ax2 = ax1.twinx()
         if Nt == 1:
-            eps = kwargs['eps']
-            ax2.set_ylabel('$\epsilon_d/2$ $/2\pi$ [GHz]')
-            ax2.plot(times, eps/2/(2*pi)*coupling, color=plotcolours['drive'], 
+            Omega_d = kwargs['Omega_d']
+            ax2.set_ylabel('$\Omega_d/2$ $/2\pi$ [GHz]')
+            ax2.plot(times, Omega_d/2/(2*pi)*coupling, color=plotcolours['drive'], 
                      alpha=alpha, label="Drive")
-            ax2.set_ylim([0, 1.1*max(eps/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_d/2/(2*pi)*coupling)])
         elif Nt == 2:
-            epsq = kwargs['epsq']
-            epsc = kwargs['epsc']
-            ax2.set_ylabel('$\epsilon_{d_{q}}/2$ $/2/\pi$ [GHz]')
-            ax2.plot(times, epsc/2/(2*pi)*coupling, color=plotcolours['driveq'],
+            Omega_dq = kwargs['Omega_dq']
+            Omega_dc = kwargs['Omega_dc']
+            ax2.set_ylabel('$\Omega_{d_{q}}/2$ $/2/\pi$ [GHz]')
+            ax2.plot(times, Omega_dc/2/(2*pi)*coupling, color=plotcolours['driveq'],
                      alpha=alpha, label="Cavity-friendly drive")
-            ax2.plot(times, epsq/2/(2*pi)*coupling, color=plotcolours['drivec'],
+            ax2.plot(times, Omega_dq/2/(2*pi)*coupling, color=plotcolours['drivec'],
                      alpha=alpha, label="Qubit-friendly drive")
-            ax2.set_ylim([0, 1.1*max(epsc/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_dc/2/(2*pi)*coupling)])
         ax2.tick_params(axis='y')
         ax2.legend(loc='center right')
 
@@ -422,32 +424,32 @@ def sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, fig
     if "title" in kwargs:
         plt.title(kwargs['title'])
     else:
-        wsb = kwargs['wsb']
+        Omega_sb = kwargs['Omega_sb']
         if sb == 'red':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone red sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone red sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
         elif sb == 'blue':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone blue sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone blue sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
     plt.tight_layout()
     plt.show()
     
     return figqc, axqc
 
 
-def sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3], incl_wsb=True, **kwargs):
+def sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3], incl_Omega_sb=True, **kwargs):
     """
     Plots qubit's and cavity's expected occupation number from simulation
     for sideband transitions.
@@ -472,7 +474,7 @@ def sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim
         Range of vertical axis
     figsize : list, tuple
         Size of figure
-    incl_wsb : bool
+    incl_Omega_sb : bool
         Print sideband transition frequency in figure title
     
     Returns
@@ -532,23 +534,23 @@ def sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim
     else:
         ax1.set_ylim(ylim)
     
-    if ('convergent' in H_args.keys() and not H_args['convergent']):
+    if convergent == False:
         ax2 = ax1.twinx()
         if Nt == 1:
-            eps = kwargs['eps']
-#            ax2.set_ylabel('$\epsilon_d/2$ $/2\pi$ [GHz]')
-            ax2.plot(times, eps/2/(2*pi)*coupling, color=plotcolours['drive'], 
+            Omega_d = kwargs['Omega_d']
+#            ax2.set_ylabel('$\Omega_d/2$ $/2\pi$ [GHz]')
+            ax2.plot(times, Omega_d/2/(2*pi)*coupling, color=plotcolours['drive'], 
                      alpha=alpha, label="Drive, coupling")
-            ax2.set_ylim([0, 1.1*max(eps/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_d/2/(2*pi)*coupling)])
         elif Nt == 2:
-            epsq = kwargs['epsq']
-            epsc = kwargs['epsc']
-#            ax2.set_ylabel('$\epsilon_{d_{q}}/2$ $/2/\pi$ [GHz]')
-            ax2.plot(times, epsc/2/(2*pi)*coupling, color=plotcolours['driveq'],
+            Omega_dq = kwargs['Omega_dq']
+            Omega_dc = kwargs['Omega_dc']
+#            ax2.set_ylabel('$\Omega_{d_{q}}/2$ $/2/\pi$ [GHz]')
+            ax2.plot(times, Omega_dc/2/(2*pi)*coupling, color=plotcolours['driveq'],
                      alpha=alpha, label="Cavity-friendly drive")
-            ax2.plot(times, epsq/2/(2*pi)*coupling, color=plotcolours['drivec'],
+            ax2.plot(times, Omega_dq/2/(2*pi)*coupling, color=plotcolours['drivec'],
                      alpha=alpha, label="Qubit-friendly drive")
-            ax2.set_ylim([0, 1.1*max(epsc/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_dc/2/(2*pi)*coupling)])
         ax2.tick_params(axis='y')
         ax2.set_yticks([])
         ax2.legend(loc='center right')
@@ -559,25 +561,25 @@ def sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim
     if "title" in kwargs:
         plt.title(kwargs['title'])
     else:
-        wsb = kwargs['wsb']
+        Omega_sb = kwargs['Omega_sb']
         if sb == 'red':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone red sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone red sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
         elif sb == 'blue':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone blue sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone blue sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
     plt.tight_layout()
     plt.show()
     
@@ -585,7 +587,7 @@ def sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim
 
 
 
-def sb_combined_probs(times, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3], **kwargs):
+def sb_combined_probs(times, sb, Nt, H_args, convergent, coupling, xlim=None, ylim=None, figsize=[15,3], **kwargs):
     """
     Plots |e0>-|g1> in case of red sideband transitions (specified by sb input),
     or |e1>-|g0> in case of blue sideband transitions.
@@ -600,6 +602,8 @@ def sb_combined_probs(times, sb, Nt, H_args, coupling, xlim=None, ylim=None, fig
         Number of drive tones
     H_args : dict
         Parameters for time-dependent Hamiltonians and collapse operators
+    convergent : bool
+        Whether to use convergent method or not
     coupling : array-like
         Normalized coupling strength of the drive tone(s) over time
     xlim : list, tuple
@@ -644,23 +648,23 @@ def sb_combined_probs(times, sb, Nt, H_args, coupling, xlim=None, ylim=None, fig
     else:
         ax1.set_ylim(ylim)
     
-    if ('convergent' in H_args.keys() and not H_args['convergent']):
+    if convergent == False:
         ax2 = ax1.twinx()
         if Nt == 1:
-            eps = kwargs['eps']
-            ax2.set_ylabel('$\epsilon_d/2$ $/2\pi$ [GHz]')
-            ax2.plot(times, eps/2/(2*pi)*coupling, color=plotcolours['drive'],
+            Omega_d = kwargs['Omega_d']
+            ax2.set_ylabel('$\Omega_d/2$ $/2\pi$ [GHz]')
+            ax2.plot(times, Omega_d/2/(2*pi)*coupling, color=plotcolours['drive'],
                      alpha=alpha, label="Drive")
-            ax2.set_ylim([0, 1.1*max(eps/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_d/2/(2*pi)*coupling)])
         elif Nt == 2:
-            epsq = kwargs['epsq']
-            epsc = kwargs['epsc']
-            ax2.set_ylabel('$\epsilon/2$ $/2/\pi$ [GHz]')
-            ax2.plot(times, epsc/2/(2*pi)*coupling, color=plotcolours['driveq'],
+            Omega_dq = kwargs['Omega_dq']
+            Omega_dc = kwargs['Omega_dc']
+            ax2.set_ylabel('$\Omega_{dq}/2$ $/2/\pi$ [GHz]')
+            ax2.plot(times, Omega_dc/2/(2*pi)*coupling, color=plotcolours['driveq'],
                      alpha=alpha, label="Cavity-friendly drive")
-            ax2.plot(times, epsq/2/(2*pi)*coupling, color=plotcolours['drivec'],
+            ax2.plot(times, Omega_dq/2/(2*pi)*coupling, color=plotcolours['drivec'],
                      alpha=alpha, label="Qubit-friendly drive")
-            ax2.set_ylim([0, 1.1*max(epsc/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_dc/2/(2*pi)*coupling)])
         ax2.tick_params(axis='y')
         ax2.legend(loc='center right')
 
@@ -670,25 +674,25 @@ def sb_combined_probs(times, sb, Nt, H_args, coupling, xlim=None, ylim=None, fig
     if "title" in kwargs:
         plt.title(kwargs['title'])
     else:
-        wsb = kwargs['wsb']
+        Omega_sb = kwargs['Omega_sb']
         if sb == 'red':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone red sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone red sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
         elif sb == 'blue':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone blue sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone blue sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
     plt.tight_layout()
     plt.show()
     
@@ -755,23 +759,23 @@ def sb_combined_probs_temporary(times, sb, Nt, H_args, coupling, xlim=None, ylim
     else:
         ax1.set_ylim(ylim)
     
-    if ('convergent' in H_args.keys() and not H_args['convergent']):
+    if convergent == False:
         ax2 = ax1.twinx()
         if Nt == 1:
-            eps = kwargs['eps']
-#            ax2.set_ylabel('$\epsilon_d/2$ $/2\pi$ [GHz]')
-            ax2.plot(times, eps/2/(2*pi)*coupling, color=plotcolours['drive'],
+            Omega_d = kwargs['Omega_d']
+#            ax2.set_ylabel('$\Omega_d/2$ $/2\pi$ [GHz]')
+            ax2.plot(times, Omega_d/2/(2*pi)*coupling, color=plotcolours['drive'],
                      alpha=alpha, label="Drive, coupling")
-            ax2.set_ylim([0, 1.1*max(eps/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_d/2/(2*pi)*coupling)])
         elif Nt == 2:
-            epsq = kwargs['epsq']
-            epsc = kwargs['epsc']
-#            ax2.set_ylabel('$\epsilon/2$ $/2/\pi$ [GHz]')
-            ax2.plot(times, epsc/2/(2*pi)*coupling, color=plotcolours['driveq'],
+            Omega_dq = kwargs['Omega_dq']
+            Omega_dc = kwargs['Omega_dc']
+#            ax2.set_ylabel('$\Omega_dq/2$ $/2/\pi$ [GHz]')
+            ax2.plot(times, Omega_dc/2/(2*pi)*coupling, color=plotcolours['driveq'],
                      alpha=alpha, label="Cavity-friendly drive")
-            ax2.plot(times, epsq/2/(2*pi)*coupling, color=plotcolours['drivec'],
+            ax2.plot(times, Omega_dq/2/(2*pi)*coupling, color=plotcolours['drivec'],
                      alpha=alpha, label="Qubit-friendly drive")
-            ax2.set_ylim([0, 1.1*max(epsc/2/(2*pi)*coupling)])
+            ax2.set_ylim([0, 1.1*max(Omega_dc/2/(2*pi)*coupling)])
         ax2.tick_params(axis='y')
         ax2.set_yticks([])
         ax2.legend(loc='center right')
@@ -782,25 +786,25 @@ def sb_combined_probs_temporary(times, sb, Nt, H_args, coupling, xlim=None, ylim
     if "title" in kwargs:
         plt.title(kwargs['title'])
     else:
-        wsb = kwargs['wsb']
+        Omega_sb = kwargs['Omega_sb']
         if sb == 'red':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone red sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone red sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
         elif sb == 'blue':
             if Nt == 1:
-                wd = kwargs['wd']
+                omega_d = kwargs['omega_d']
                 plt.title("Single-tone blue sideband transitions " +
                           "at $\\omega_d/2\\pi$ = {} GHz ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(wd/2/pi, 3), round(1000*wsb/2/pi, 1)))
+                          round(omega_d/2/pi, 3), round(1000*Omega_sb/2/pi, 1)))
             elif Nt == 2:
                 plt.title("Double-tone blue sideband transitions ($\\Omega_{{sb}}/2\\pi$ = {} MHz)".format(
-                          round(1000*wsb/2/pi, 1)))
+                          round(1000*Omega_sb/2/pi, 1)))
     plt.tight_layout()
     plt.show()
     

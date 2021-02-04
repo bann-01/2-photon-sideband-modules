@@ -44,7 +44,7 @@ def pumpdrive(t, args):
     t1 = args['t1']  # end of pulse
     t6 = args['t6']  # end of cycle
     Q  = args['Q']   # number of std's in Gaussian rise and fall
-    wd = args['wd']  # drive frequency
+    omega_d = args['omega_d']  # drive frequency
     
     t = t%t6  # repeat cycle
     mu = (t1-t0)/2  # pulse center in time domain
@@ -52,7 +52,7 @@ def pumpdrive(t, args):
     confine = np.heaviside((t-t0), 0) - np.heaviside((t-t1), 0)  # entire pulse
     
     pulse = exp(-(t-mu)**2/(2*std**2))*confine
-    envelope = pulse*np.cos(wd*t)
+    envelope = pulse*np.cos(omega_d*t)
     return envelope
 
 
@@ -67,13 +67,13 @@ def drive(t, args):
     except:
         gauss = args['smooth']  # for older data where the names were different
     Q  = args['Q']     # number of std's in Gaussian rise and fall
-    wd = args['wd']  # drive frequency
+    omega_d = args['omega_d']  # drive frequency
     
     confine = np.heaviside((t-t1), 0) - np.heaviside((t-t2), 0)  # entire pulse
     
     # Rise and fall with Gaussian
     if tg == 0:
-        envelope = np.cos(wd*t)
+        envelope = confine*np.cos(omega_d*t)
     else:  
         std = tg/Q  # standard deviation of Gaussian
         gaussian = lambda mu : exp(-(t-mu)**2/(2*std**2))  # Gaussian
@@ -89,7 +89,7 @@ def drive(t, args):
         else:
             pulse = confine
     
-        envelope = pulse*np.cos(wd*t)
+        envelope = pulse*np.cos(omega_d*t)
     return envelope
 
 
@@ -104,13 +104,13 @@ def drive_no_CR_m(t, args):
     except:
         gauss = args['smooth']  # for older data where the names were different
     Q  = args['Q']     # number of std's in Gaussian rise and fall
-    wd = args['wd']  # drive frequency
+    omega_d = args['omega_d']  # drive frequency
     
     confine = np.heaviside((t-t1), 0) - np.heaviside((t-t2), 0)  # entire pulse
     
     # Rise and fall with Gaussian
     if tg == 0:
-        envelope = np.exp(-1j*wd*t)
+        envelope = confine*np.exp(-1j*omega_d*t)
     else:
         std = tg/Q  # standard deviation of Gaussian
         gaussian = lambda mu : exp(-(t-mu)**2/(2*std**2))  # Gaussian
@@ -126,7 +126,7 @@ def drive_no_CR_m(t, args):
         else:
             pulse = confine
     
-        envelope = pulse*np.exp(-1j*wd*t)
+        envelope = pulse*np.exp(-1j*omega_d*t)
         
     return envelope
 
@@ -142,13 +142,13 @@ def drive_no_CR_p(t, args):
     except:
         gauss = args['smooth']  # for older data where the names were different
     Q  = args['Q']     # number of std's in Gaussian rise and fall
-    wd = args['wd']  # drive frequency
+    omega_d = args['omega_d']  # drive frequency
     
     confine = np.heaviside((t-t1), 0) - np.heaviside((t-t2), 0)  # entire pulse
     
     # Rise and fall with Gaussian
     if tg == 0:
-        envelope = np.exp(1j*wd*t)
+        envelope = confine*np.exp(1j*omega_d*t)
     else:
         std = tg/Q  # standard deviation of Gaussian
         gaussian = lambda mu : exp(-(t-mu)**2/(2*std**2))  # Gaussian
@@ -164,7 +164,7 @@ def drive_no_CR_p(t, args):
         else:
             pulse = confine
     
-        envelope = pulse*np.exp(1j*wd*t)
+        envelope = pulse*np.exp(1j*omega_d*t)
     return envelope
 
 
@@ -179,13 +179,13 @@ def driveq(t, args):
     except:
         gauss = args['smooth']  # for older data where the names were different
     Q  = args['Q']     # number of std's in Gaussian rise and fall
-    wd = args['wdq']  # drive frequency
+    omega_d = args['omega_dq']  # drive frequency
     
     confine = np.heaviside((t-t1), 0) - np.heaviside((t-t2), 0)  # entire pulse
     
     # Rise and fall with Gaussian
     if tg == 0:
-        envelope = np.cos(wd*t)
+        envelope = confine*np.cos(omega_d*t)
     else:  
         std = tg/Q  # standard deviation of Gaussian
         gaussian = lambda mu : exp(-(t-mu)**2/(2*std**2))  # Gaussian
@@ -201,7 +201,7 @@ def driveq(t, args):
         else:
             pulse = confine
     
-        envelope = pulse*np.cos(wd*t)
+        envelope = pulse*np.cos(omega_d*t)
     return envelope
 
 
@@ -216,13 +216,13 @@ def drivec(t, args):
     except:
         gauss = args['smooth']  # for older data where the names were different
     Q  = args['Q']     # number of std's in Gaussian rise and fall
-    wd = args['wdc']  # drive frequency
+    omega_d = args['omega_dc']  # drive frequency
     
     confine = np.heaviside((t-t1), 0) - np.heaviside((t-t2), 0)  # entire pulse
     
     # Rise and fall with Gaussian
     if tg == 0:
-        envelope = np.cos(wd*t)
+        envelope = confine*np.cos(omega_d*t)
     else:  
         std = tg/Q  # standard deviation of Gaussian
         gaussian = lambda mu : exp(-(t-mu)**2/(2*std**2))  # Gaussian
@@ -238,7 +238,7 @@ def drivec(t, args):
         else:
             pulse = confine
     
-        envelope = pulse*np.cos(wd*t)
+        envelope = pulse*np.cos(omega_d*t)
     return envelope
 
 
@@ -258,7 +258,7 @@ def drive_nonosc(t, args):
     
     # Rise and fall with Gaussian
     if tg == 0:
-        pulse = 1   
+        pulse = confine   
     else:
         std = tg/Q  # standard deviation of Gaussian
         gaussian = lambda mu : exp(-(t-mu)**2/(2*std**2))  # Gaussian

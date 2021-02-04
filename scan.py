@@ -11,7 +11,7 @@ from ipywidgets import widgets
 from IPython.display import display
 
 
-def sbsample(Nq, wq, wc, Ec, g, wd, sb, Nt, H, H_args, psi0, c_ops, Np_per_batch,
+def sbsample(Nq, omega_q, omega_c, Ec, g, omega_dsi, sb, Nt, H, H_args, convergent, refinement, psi0, c_ops, Np_per_batch,
              options, home, parallel, *args, **kwargs):
     """
     Performs a single- or double-tone sideband transition simulation
@@ -23,8 +23,8 @@ def sbsample(Nq, wq, wc, Ec, g, wd, sb, Nt, H, H_args, psi0, c_ops, Np_per_batch
     Due to the use of the pool.starmap function, the additional
     arguments of *args, dependent on Nt, have to be passed in
     a definite order.
-    Nt = 1 : eps
-    Nt = 2 : epsq, epsc, dw
+    Nt = 1 : Omega_d
+    Nt = 2 : Omega_dq, Omega_dc, d_omega
     
     Input
     -----
@@ -36,28 +36,33 @@ def sbsample(Nq, wq, wc, Ec, g, wd, sb, Nt, H, H_args, psi0, c_ops, Np_per_batch
         Figure with expected qubit and cavity occupation number
     fig : matplot.pyplot.Figure class object
         Figure with combined probabilities
+    Swept_freq : float. 
+        The swept frequency.
+    fidelity : float.
+        Fidelity of sideband transition.
     """
     from envelopes import drive
     
-    i = wd[0]
-    wd = wd[1]
+    i = omega_dsi[0]
+    omega_swept = omega_dsi[1]
     
     Nc = 10  # number of levels in resonator 1
     
     Np = 100*int(H_args['t3'])  # number of discrete time steps for which to store the output
     b, a, nq, nc = ops(Nq, Nc)  # Operators
     if Nt == 1:
-        H_args['wd'] = wd
+        omega_d = omega_swept
+        H_args['omega_d'] = omega_d
     elif Nt == 2:
-        dw = args[2]
-        wdq = wd
-        wdc =  wc - dw
-        H_args['wdq'] = wdq
-        H_args['wdc'] = wdc
+        d_omega = args[2]
+        omega_dq = omega_swept
+        omega_dc =  omega_c - d_omega
+        H_args['omega_dq'] = omega_dq
+        H_args['omega_dc'] = omega_dc
     e_ops = [nq, nc]
-        
-    srcfolder = calculate(H, psi0, e_ops, c_ops, H_args, options, Nc, Np, Np_per_batch,
-                          home, parallel, verbose=False, convergent=False, SaveQobject=True, method='me')
+
+    srcfolder = calculate(H, psi0, e_ops, c_ops, H_args, convergent, refinement, options, Nc, Np, Np_per_batch,
+                          home, parallel, verbose=False, method='me')
     
     quants = ['times', 'expect', 'e0', 'g1', 'e1', 'g0', 'coupling']
     ID = getID(srcfolder)
@@ -72,75 +77,85 @@ def sbsample(Nq, wq, wc, Ec, g, wd, sb, Nt, H, H_args, psi0, c_ops, Np_per_batch
     print(" ")
     
     if Nt == 1:
-        eps = args[0]
-        print("wd = {}".format(wd/2/pi))
+        Omega_d = args[0]
+        Swept_freq = omega_swept/2/pi
+        print("omega_d = {}".format(omega_d/2/pi))
         if sb == 'red':
+            fidelity = abs(max(e0-g1)-min(e0-g1))/2
             print("min = {}, max = {}".format(round(min(e0-g1), 4), round(max(e0-g1), 4)))
-            expect_title = "wd = {}".format(wd/2/pi)
-            cp_title = "wd = {}, min = {}, max = {}".format(wd/2/pi, round(min(e0-g1), 4), round(max(e0-g1), 4))
-            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3],
-                              wd=wd, wsb=0, title=expect_title, eps=eps)
-            fig, axp = sb_combined_probs(times, sb, Nt, H_args, coupling,
-                                    e0=e0, g1=g1, wd=wd, wsb=0, title=cp_title, eps=eps)
+            print("fidelity = {}".format(round(fidelity),4))
+            expect_title = "omega_d = {}".format(omega_d/2/pi)
+            cp_title = "omega_d = {}, min = {}, max = {}".format(omega_d/2/pi, round(min(e0-g1), 4), round(max(e0-g1), 4))
+            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, convergent, coupling, xlim=None, ylim=None, figsize=[15,3],
+                              omega_d=omega_d, wsb=0, title=expect_title, Omega_d=Omega_d)
+            fig, axp = sb_combined_probs(times, sb, Nt, H_args, convergent, coupling,
+                                    e0=e0, g1=g1, omega_d=omega_d, wsb=0, title=cp_title, Omega_d=Omega_d)
         elif sb == 'blue':
+            fidelity = abs(max(e1-g0)-min(e1-g0))/2
             print("min = {}, max = {}".format(round(min(e1-g0), 4), round(max(e1-g0), 4)))
-            expect_title = "wd = {}".format(wd/2/pi)
-            cp_title = "wd = {}, min = {}, max = {}".format(wd/2/pi, round(min(e1-g0), 4), round(max(e1-g0), 4))
-            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3],
-                              wd=wd, wsb=0, title=expect_title, eps=eps)
-            fig, axp = sb_combined_probs(times, sb, Nt, H_args, coupling,
-                                    e1=e1, g0=g0, wd=wd, wsb=0, title=cp_title, eps=eps)
-        fig.savefig(home + "temp/fig{}_{}.png".format(num, wd/2/pi))
-        figqc.savefig(home + "temp/figqc{}_{}.png".format(num, wd/2/pi))
+            print("fidelity = {}".format(round(fidelity),4))
+            expect_title = "omega_d = {}".format(omega_d/2/pi)
+            cp_title = "omega_d = {}, min = {}, max = {}".format(omega_d/2/pi, round(min(e1-g0), 4), round(max(e1-g0), 4))
+            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, convergent, coupling, xlim=None, ylim=None, figsize=[15,3],
+                              omega_d=omega_d, wsb=0, title=expect_title, Omega_d=Omega_d)
+            fig, axp = sb_combined_probs(times, sb, Nt, H_args, convergent, coupling,
+                                    e1=e1, g0=g0, omega_d=omega_d, wsb=0, title=cp_title, Omega_d=Omega_d)
+        fig.savefig(home + "temp/fig{}_{}.png".format(num, omega_d/2/pi))
+        figqc.savefig(home + "temp/figqc{}_{}.png".format(num, omega_d/2/pi))
     
     elif Nt == 2:
-        epsq = args[0]
-        epsc = args[1]
-        print("wdq = {}".format(wdq/2/pi))
+        Omega_dq = args[0]
+        Omega_dc = args[1]
+        Swept_freq = omega_swept/2/pi
+        print("omega_dq = {}".format(omega_dq/2/pi))
         if sb == 'red':
+            fidelity = abs(max(e0-g1)-min(e0-g1))/2
             print("min = {}, max = {}".format(round(min(e0-g1), 4), round(max(e0-g1), 4)))
-            expect_title = "wdq = {}".format(wdq/2/pi)
-            cp_title = "wdq = {}, min = {}, max = {}".format(wdq/2/pi, round(min(e0-g1), 4), round(max(e0-g1), 4))
-            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3],
-                              wsb=0, title=expect_title, epsq=epsq, epsc=epsc)
-            fig, axp = sb_combined_probs(times, sb, Nt, H_args, coupling,
+            print("fidelity = {}".format(round(fidelity),4))
+            expect_title = "omega_dq = {}".format(omega_dq/2/pi)
+            cp_title = "omega_dq = {}, min = {}, max = {}".format(omega_dq/2/pi, round(min(e0-g1), 4), round(max(e0-g1), 4))
+            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, convergent, coupling, xlim=None, ylim=None, figsize=[15,3],
+                              wsb=0, title=expect_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
+            fig, axp = sb_combined_probs(times, sb, Nt, H_args, convergent, coupling,
                                     xlim=None, ylim=None, figsize=[15,3], e0=e0, g1=g1, wsb=0,
-                                    title=cp_title, epsq=epsq, epsc=epsc)
+                                    title=cp_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
         elif sb == 'blue':
+            fidelity = abs(max(e1-g0)-min(e1-g0))/2
             print("min = {}, max = {}".format(round(min(e1-g0), 4), round(max(e1-g0), 4)))
-            expect_title = "wdq = {}".format(wdq/2/pi)
-            cp_title = "wdq = {}, min = {}, max = {}".format(wdq/2/pi, round(min(e1-g0), 4), round(max(e1-g0), 4))
-            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, coupling, xlim=None, ylim=None, figsize=[15,3],
-                              wsb=0, title=expect_title, epsq=epsq, epsc=epsc)
-            fig, axp = sb_combined_probs(times, sb, Nt, H_args, coupling,
+            print("fidelity = {}".format(round(fidelity),4))
+            expect_title = "omega_dq = {}".format(omega_dq/2/pi)
+            cp_title = "omega_dq = {}, min = {}, max = {}".format(omega_dq/2/pi, round(min(e1-g0), 4), round(max(e1-g0), 4))
+            figqc, axqc = sb_expect(times, expect, sb, Nt, H_args, convergent, coupling, xlim=None, ylim=None, figsize=[15,3],
+                              wsb=0, title=expect_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
+            fig, axp = sb_combined_probs(times, sb, Nt, H_args, convergent, coupling,
                                     xlim=None, ylim=None, figsize=[15,3], e1=e1, g0=g0, wsb=0,
-                                    title=cp_title, epsq=epsq, epsc=epsc)
-        fig.savefig(home + "temp/fig{}_{}.png".format(num, wdq/2/pi))
-        figqc.savefig(home + "temp/figqc{}_{}.png".format(num, wdq/2/pi))
+                                    title=cp_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
+        fig.savefig(home + "temp/fig{}_{}.png".format(num, omega_dq/2/pi))
+        figqc.savefig(home + "temp/figqc{}_{}.png".format(num, omega_dq/2/pi))
     plt.close(fig)
     plt.close(figqc)
-    return figqc, fig
+    return figqc, fig, Swept_freq, fidelity
 
 
-def sbsample_visualize_sweep(Nq, wq, wc, Ec, g, wd, sb, Nt, H, H_args, psi0, Np_per_batch,
+def sbsample_visualize_sweep(Nq, omega_q, omega_c, Ec, g, omega_d, sb, Nt, H, H_args, psi0, Np_per_batch,
              options, home, parallel, *args):
     from envelopes import drive
     
-    i = wd[0]
-    wd = wd[1]
+    i = omega_d[0]
+    omega_d = omega_d[1]
     
     Nc = 10  # number of levels in resonator 1
     
     Np = 100*int(H_args['t3'])  # number of discrete time steps for which to store the output
     b, a, nq, nc = ops(Nq, Nc)  # Operators
     if Nt == 1:
-        H_args['wd'] = wd
+        H_args['omega_d'] = omega_d
     elif Nt == 2:
-        dw = args[2]
-        wdq = wd
-        wdc =  wc - dw
-        H_args['wdq'] = wdq
-        H_args['wdc'] = wdc
+        d_omega = args[2]
+        omega_dq = omega_d
+        omega_dc =  omega_c - d_omega
+        H_args['omega_dq'] = omega_dq
+        H_args['omega_dc'] = omega_dc
     e_ops = [nq, nc]
     c_ops = []
         
@@ -160,51 +175,51 @@ def sbsample_visualize_sweep(Nq, wq, wc, Ec, g, wd, sb, Nt, H, H_args, psi0, Np_
     print(" ")
     
     if Nt == 1:
-        eps = args[0]
-        print("$\\omega_d /2\\pi = ${} GHz".format(wd/2/pi))
+        Omega_d = args[0]
+        print("$\\omega_d /2\\pi = ${} GHz".format(omega_d/2/pi))
         if sb == 'red':
-            expect_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(wd/2/pi, 4))
-            cp_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(wd/2/pi, 4))
+            expect_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(omega_d/2/pi, 4))
+            cp_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(omega_d/2/pi, 4))
             figqc, axqc = sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=[0,1000], ylim=[-0.02, 1.02], figsize=[12,4],
-                              wd=wd, wsb=0, title=expect_title, eps=eps)
+                              omega_d=omega_d, wsb=0, title=expect_title, Omega_d=Omega_d)
             fig, axp = sb_combined_probs_temporary(times, sb, Nt, H_args, coupling, figsize=[12,4],
-                                    e0=e0, g1=g1, wd=wd, wsb=0, xlim=[0,1000], ylim=[-1.02, 1.02], title=cp_title, eps=eps)
+                                    e0=e0, g1=g1, omega_d=omega_d, wsb=0, xlim=[0,1000], ylim=[-1.02, 1.02], title=cp_title, Omega_d=Omega_d)
         elif sb == 'blue':
-            expect_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(wd/2/pi, 4))
-            cp_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(wd/2/pi, 4))
+            expect_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(omega_d/2/pi, 4))
+            cp_title = "$\\omega_d /2\\pi = ${} GHz".format(np.round(omega_d/2/pi, 4))
             figqc, axqc = sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=[0,1000], ylim=[-0.02, 1.02], figsize=[12,4],
-                              wd=wd, wsb=0, title=expect_title, eps=eps)
+                              omega_d=omega_d, wsb=0, title=expect_title, Omega_d=Omega_d)
             fig, axp = sb_combined_probs_temporary(times, sb, Nt, H_args, coupling, figsize=[12,4],
-                                    e1=e1, g0=g0, wd=wd, wsb=0, xlim=[0,1000], ylim=[-1.02, 1.02], title=cp_title, eps=eps)
+                                    e1=e1, g0=g0, omega_d=omega_d, wsb=0, xlim=[0,1000], ylim=[-1.02, 1.02], title=cp_title, Omega_d=Omega_d)
     
     elif Nt == 2:
-        epsq = args[0]
-        epsc = args[1]
-        print("$\\omega_dq /2\\pi = ${} GHz".format(np.round(wdq/2/pi, 4)))
+        Omega_dq = args[0]
+        Omega_dc = args[1]
+        print("$\\omega_dq /2\\pi = ${} GHz".format(np.round(omega_dq/2/pi, 4)))
         if sb == 'red':
-            expect_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(wdq/2/pi, 4))
-            cp_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(wdq/2/pi, 4))
+            expect_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(omega_dq/2/pi, 4))
+            cp_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(omega_dq/2/pi, 4))
             figqc, axqc = sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=[0,1000], ylim=[-0.02, 1.02], figsize=[12,4],
-                              wsb=0, title=expect_title, epsq=epsq, epsc=epsc)
+                              wsb=0, title=expect_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
             fig, axp = sb_combined_probs_temporary(times, sb, Nt, H_args, coupling,
                                    xlim=[0,1000], ylim=[-1.02, 1.02], figsize=[15,3], e0=e0, g1=g1, wsb=0,
-                                    title=cp_title, epsq=epsq, epsc=epsc)
+                                    title=cp_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
         elif sb == 'blue':
-            expect_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(wdq/2/pi, 4))
-            cp_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(wdq/2/pi, 4))
+            expect_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(omega_dq/2/pi, 4))
+            cp_title = "$\\omega_dq /2\\pi = ${} GHz".format(np.round(omega_dq/2/pi, 4))
             figqc, axqc = sb_expect_temporary(times, expect, sb, Nt, H_args, coupling, xlim=[0,1000], ylim=[-0.02, 1.02], figsize=[12,4],
-                              wsb=0, title=expect_title, epsq=epsq, epsc=epsc)
+                              wsb=0, title=expect_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
             fig, axp = sb_combined_probs_temporary(times, sb, Nt, H_args, coupling, 
                                     xlim=[0,1000], ylim=[-1.02, 1.02], figsize=[12,4], e1=e1, g0=g0, wsb=0,
-                                    title=cp_title, epsq=epsq, epsc=epsc)
-    fig.savefig("/Users/Wouter/Documents/TU/TN/Master/Thesis project/Midterm presentation/freq sweep method/fig_{}.png".format(num))
-    figqc.savefig("/Users/Wouter/Documents/TU/TN/Master/Thesis project/Midterm presentation/freq sweep method/figqc_{}.png".format(num))
+                                    title=cp_title, Omega_dq=Omega_dq, Omega_dc=Omega_dc)
+        fig.savefig(home + "temp/fig{}_{}.png".format(num, omega_dq/2/pi))
+        figqc.savefig(home + "temp/figqc{}_{}.png".format(num, omega_dq/2/pi))
     plt.close(fig)
     plt.close(figqc)
     return figqc, fig
 
 
-def qfs(Nq, wq, Ec, wp, H, H_args, psi0, Nc, Np, Np_per_batch, options, home, parallel):
+def qfs(Nq, omega_q, Ec, omega_p, H, H_args, psi0, Nc, Np, Np_per_batch, options, home, parallel):
     """
     Applies a probe tone to an uncoupled qubit to find its transition frequency,
     which can be shifted due to a dispersive drive.
@@ -213,9 +228,9 @@ def qfs(Nq, wq, Ec, wp, H, H_args, psi0, Nc, Np, Np_per_batch, options, home, pa
     -----
     The input parameters are equal to the names in 2p_sideband.ipynb.
     """
-    i = wp[0]
-    wp = wp[1]
-    H_args['wp'] = wp
+    i = omega_p[0]
+    omega_p = omega_p[1]
+    H_args['omega_p'] = omega_p
     b, nq = ops(Nq)
     e_ops = [nq]
     c_ops = []
@@ -231,20 +246,20 @@ def qfs(Nq, wq, Ec, wp, H, H_args, psi0, Nc, Np, Np_per_batch, options, home, pa
     elif i >= 10:
         num = str(i)
     
-    print("\nshift  =", (wp-wq)/2/pi)
-    print("wp     =", wp/2/pi)
+    print("\nshift  =", (omega_p-omega_q)/2/pi)
+    print("omega_p     =", omega_p/2/pi)
     print("max    =", max(expect[0]))
     
     plt.figure(figsize=[15,3])
     plt.plot(times, expect[0], c='k')
-    plt.title("shift {}, wp {}, max {}".format(np.round((wp-wq)/2/pi,4), np.round(wp/2/pi,4), np.round(max(expect[0]),4)))
-    plt.savefig(home + "temp/fig{}_{}.png".format(num, (wp-wq)/2/pi))
+    plt.title("shift {}, omega_p {}, max {}".format(np.round((omega_p-omega_q)/2/pi,4), np.round(omega_p/2/pi,4), np.round(max(expect[0]),4)))
+    plt.savefig(home + "temp/fig{}_{}.png".format(num, (omega_p-omega_q)/2/pi))
 
 
-def cfs(Nq, Nc, wc, Ec, wp, H, H_args, psi0, Np_per_batch, options, home, parallel):
-    i = wp[0]
-    wp = wp[1]
-    H_args['wp'] = wp
+def cfs(Nq, Nc, omega_c, Ec, omega_p, H, H_args, psi0, Np_per_batch, options, home, parallel):
+    i = omega_p[0]
+    omega_p = omega_p[1]
+    H_args['omega_p'] = omega_p
     Np = 100*int(H_args['t3'])     # number of discrete time steps for which to store the output
     b, a, nq, nc = ops(Nq, Nc)  # Operators
     e_ops = [nq, nc]
@@ -261,11 +276,11 @@ def cfs(Nq, Nc, wc, Ec, wp, H, H_args, psi0, Np_per_batch, options, home, parall
     elif i >= 10:
         num = str(i)
     
-    print("wp     =", wp/2/pi)
+    print("omega_p     =", omega_p/2/pi)
     print("max    =", max(expect[1]))
     
     plt.figure(figsize=[15,3])
 #    plt.plot(times, expect[0], c='b')
     plt.plot(times, expect[1], c='r')
-    plt.title("shift {}, wp {}, max {}".format(np.round((wp-wc)/2/pi,4), np.round(wp/2/pi,4), np.round(max(expect[1]),6)))
-    plt.savefig(home + "temp/fig{}_{}.png".format(num, (wp-wc)/2/pi))
+    plt.title("shift {}, omega_p {}, max {}".format(np.round((omega_p-omega_c)/2/pi,4), np.round(omega_p/2/pi,4), np.round(max(expect[1]),6)))
+    plt.savefig(home + "temp/fig{}_{}.png".format(num, (omega_p-omega_c)/2/pi))

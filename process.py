@@ -51,7 +51,7 @@ def prepare_folder(home, parallel=False):
     return ID, folder, now
 
 
-def saveparams(Nq, Nc, Nt, wq, shift, wc, Ec, g, sb,
+def saveparams(Nq, Nc, Nt, omega_q, omega_c, Ec, g, sb,
                t0, t1, t2, t3, tg, anh_appr, gauss, smooth, Q,
                convergent, Np, H, psi0, e_ops, options,
                folder, frmt, **kwargs):
@@ -73,21 +73,21 @@ def saveparams(Nq, Nc, Nt, wq, shift, wc, Ec, g, sb,
     
     if 'pkl' in frmt:
         data = {
-            'Nq' : Nq, 'Nc' : Nc, 'Nt' : Nt, 'wq' : wq, 'shift' : shift, 'wc' : wc,
+            'Nq' : Nq, 'Nc' : Nc, 'Nt' : Nt, 'omega_q' : omega_q, 'omega_c' : omega_c,
             'Ec' : Ec, 'g' : g, 'sb' : sb, 't0' : t0, 't1' : t1, 't2' : t2, 't3' : t3,
             'tg' : tg, 'anh_appr' : anh_appr, 'gauss' : gauss, 'smooth' : smooth, 'Q' : Q, 
             'convergent' : convergent, 'Np' : Np, 'H' : H, 'psi0' : psi0,
             'e_ops' : e_ops, 'options' : options        
         }
         if Nt == 1:
-            data['eps'] = kwargs['eps']
-            data['wd'] = kwargs['wd']
+            data['Omega_d'] = kwargs['Omega_d']
+            data['omega_d'] = kwargs['omega_d']
         elif Nt == 2:
-            data['epsq'] = kwargs['epsq']
-            data['epsc'] = kwargs['epsc']
-            data['dw'] = kwargs['dw']
-            data['wdq'] = kwargs['wdq']
-            data['wdc'] = kwargs['wdc']
+            data['Omega_dq'] = kwargs['Omega_dq']
+            data['Omega_dc'] = kwargs['Omega_dc']
+            data['d_omega'] = kwargs['d_omega']
+            data['omega_dq'] = kwargs['omega_dq']
+            data['omega_dc'] = kwargs['omega_dc']
 
         name = folder + "/parameters.pkl"
         pklfile = open(name, "wb")
@@ -100,9 +100,8 @@ def saveparams(Nq, Nc, Nt, wq, shift, wc, Ec, g, sb,
                 "# of qubit levels               Nq     : {}\n".format(Nq),
                 "# of cavity levels              Nc     : {}\n".format(Nc),
                 "# of tones in drive             Nt     : {}\n".format(Nt),
-                "qubit transition frequency      wq     : {} = {} GHz\n".format(wq, wq/2/pi),
-                "qubit's ac-Stark shift          shift  : {} = {} GHz\n".format(shift, shift/2/pi),
-                "cavity frequency                wc     : {} = {} GHz\n".format(wc, wc/2/pi),
+                "qubit transition frequency      omega_q: {} = {} GHz\n".format(omega_q, omega_q/2/pi),
+                "cavity frequency                omega_c: {} = {} GHz\n".format(omega_c, omega_c/2/pi),
                 "anharmonicity                   Ec     : {} = {} GHz\n".format(Ec, Ec/2/pi),
                 "anharmonicty approximation      anh_ap : {}".format(anh_appr),
                 "qubit-cavity coupling strength  g      : {} = {} GHz\n".format(g, g/2/pi),
@@ -118,14 +117,14 @@ def saveparams(Nq, Nc, Nt, wq, shift, wc, Ec, g, sb,
                 "# of data points                Np     : {}\n".format(Np)]
                 
         if Nt == 1:
-            data.append("sideband drive amplitude        Omega  : {} = {} GHz\n".format(kwargs['eps'], kwargs['eps']/2/pi))
-            data.append("sideband drive frequency        wd     : {} = {} GHz\n".format(kwargs['wd'], kwargs['wd']/2/pi))
+            data.append("sideband drive amplitude        Omega_d  : {} = {} GHz\n".format(kwargs['Omega_d'], kwargs['Omega_d']/2/pi))
+            data.append("sideband drive frequency        omega_d       : {} = {} GHz\n".format(kwargs['omega_d'], kwargs['omega_d']/2/pi))
         elif Nt == 2:
-            data.append("amplitude of qubit-friendly sideband drive tone   epsq   : {} = {} GHz\n".format(kwargs['epsq'], kwargs['epsq']/2/pi))
-            data.append("frequency of qubit-friendly sideband drive tone   wdq    : {} = {} GHz\n".format(kwargs['wdq'], kwargs['wdq']/2/pi))
-            data.append("amplitude of cavity-friendly sideband drive tone  epsc   : {} = {} GHz\n".format(kwargs['epsc'], kwargs['epsc']/2/pi))
-            data.append("frequency of cavity-friendly sideband drive tone  wdc    : {} = {} GHz\n".format(kwargs['wdc'], kwargs['wdc']/2/pi))
-            data.append("detuning delta from wc                            dw     : {} = {} GHz\n".format(kwargs['dw'], kwargs['dw']/2/pi))
+            data.append("amplitude of qubit-friendly sideband drive tone   Omega_dq   : {} = {} GHz\n".format(kwargs['Omega_dq'], kwargs['Omega_dq']/2/pi))
+            data.append("frequency of qubit-friendly sideband drive tone   omega_dq        : {} = {} GHz\n".format(kwargs['omega_dq'], kwargs['omega_dq']/2/pi))
+            data.append("amplitude of cavity-friendly sideband drive tone  Omega_dc   : {} = {} GHz\n".format(kwargs['Omega_dc'], kwargs['Omega_dc']/2/pi))
+            data.append("frequency of cavity-friendly sideband drive tone  omega_dc        : {} = {} GHz\n".format(kwargs['omega_dc'], kwargs['omega_dc']/2/pi))
+            data.append("detuning delta from wc                            d_omega         : {} = {} GHz\n".format(kwargs['d_omega'], kwargs['d_omega']/2/pi))
         
         data.append("\nCALCULATED PARAMETERS\n")
         data.append("---------------------\n\n")
@@ -152,9 +151,8 @@ def getparams(folder):
     Nq = data['Nq']
     Nc = data['Nc']
     Nt = data['Nt']
-    wq = data['wq']
-    shift = data['shift']
-    wc = data['wc']
+    omega_q = data['omega_q']
+    omega_c = data['omega_c']
     Ec = data['Ec']
     g = data['g']
     sb = data['sb']
@@ -185,34 +183,34 @@ def getparams(folder):
     options = data['options']
     
     if Nt == 1:
-        if 'eps' in data.keys():
-            eps = data['eps']
-        elif 'Omega' in data.keys():
-            eps = data['Omega']
-        wd = data['wd']
-        epsq = None
-        epsc = None
-        dw = None
-        wdq = None
-        wdc = None
+        if 'Omega_d' in data.keys():
+            Omega_d = data['Omega_d']
+        elif 'Omega_d' in data.keys():
+            Omega_d = data['Omega_d']
+        omega_d = data['omega_d']
+        Omega_dq = None
+        Omega_dc = None
+        d_omega = None
+        omega_dq = None
+        omega_dc = None
     elif Nt == 2:
-        eps = None
-        wd = None
-        if 'epsq' in data.keys():
-            epsq = data['epsq']
-        elif 'Omegaq' in data.keys():
-            epsq = data['Omegaq']
-        if 'epsc' in data.keys():
-            epsc = data['epsc']
-        elif 'Omegac' in data.keys():
-            epsc = data['Omegac']
-        dw = data['dw']
-        wdq = data['wdq']
-        wdc = data['wdc']
+        Omega_d = None
+        omega_d = None
+        if 'Omega_dq' in data.keys():
+            Omega_dq = data['Omega_dq']
+        elif 'Omega_dq' in data.keys():
+            Omega_dq = data['Omega_dq']
+        if 'Omega_dc' in data.keys():
+            Omega_dc = data['Omega_dc']
+        elif 'Omega_dc' in data.keys():
+            Omega_dc = data['Omega_dc']
+        d_omega = data['d_omega']
+        omega_dq = data['omega_dq']
+        omega_dc = data['omega_dc']
     
     infile.close()
             
-    return Nq, Nc, Nt, wq, shift, wc, Ec, g, sb, t0, t1, t2, t3, tg, anh_appr, gauss, smooth, Q, convergent, Np, H, psi0, e_ops, options, eps, wd, epsq, epsc, dw, wdq, wdc
+    return Nq, Nc, Nt, omega_q, omega_c, Ec, g, sb, t0, t1, t2, t3, tg, anh_appr, gauss, smooth, Q, convergent, Np, H, psi0, e_ops, options, Omega_d, omega_d, Omega_dq, Omega_dc, d_omega, omega_dq, omega_dc
 
 
 def create_batches(t0, tf, Np, Nppb):
@@ -328,116 +326,6 @@ def getID(folder):
     infile.close()
     return ID
 
-
-def load_data(quants, srcfolder):
-    """
-    Extract the full evolution of specified saved quantities of a simulation.
-    All quantities not specified in quants are returned as NoneType.
-    
-    quants : str, list of str
-        Specific quantities to extract from batches and combine into a file.
-        Can contain 'times', 'states', 'expect', 'g0', 'g1', 'e0', 'e1', and 'coupling'.
-        Default is 'all' which selects all of these.
-    srcfolder : str
-        Path to the simulation folder
-        
-    Returns
-    -------
-    times : np.array
-        All time values
-    states : list of qutip.Qobj
-        All quantum states through time
-    expect : list of list
-        All expected occupation numbers
-    e0 : np.array
-        All probabilities of |e0>
-    g1 : np.array
-        All probabilities of |g1>
-    e1 : np.array
-        All probabilities of |e1>
-    g0 : np.array
-        All probabilities of |g0>
-    coupling : np.array
-        Coupling strength of the drive tone(s) through time
-    """
-    if quants == 'all':
-        quants = ['times', 'states', 'expect', 'g0', 'g1', 'e0', 'e1', 'coupling']
-    if isinstance(quants, str):
-        quants = [quants]
-    
-    if 'times' in quants:
-        tfile = open(srcfolder + "/times.pkl", 'rb')
-        tdata = pickle.load(tfile)
-        times = tdata['data']
-        tfile.close()
-        del tdata
-    else:
-        times = None
-    
-    if 'states' in quants:
-        sfile = open(srcfolder + "/states.pkl", 'rb')
-        sdata = pickle.load(sfile)
-        states = sdata['data']
-        sfile.close()
-        del sdata
-    else:
-        states = None
-    
-    if 'expect' in quants:
-        efile = open(srcfolder + "/expect.pkl", 'rb')
-        edata = pickle.load(efile)
-        expect = edata['data']
-        efile.close()
-        del edata
-    else:
-        expect = None
-    
-    if 'e0' in quants:
-        pfile = open(srcfolder + "/e0.pkl", 'rb')
-        pdata = pickle.load(pfile)
-        e0 = pdata['data']
-        pfile.close()
-        del pdata
-    else:
-        e0 = None
-    
-    if 'g1' in quants:
-        pfile = open(srcfolder + "/g1.pkl", 'rb')
-        pdata = pickle.load(pfile)
-        g1 = pdata['data']
-        pfile.close()
-        del pdata
-    else:
-        g1 = None
-
-    if 'e1' in quants:
-        pfile = open(srcfolder + "/e1.pkl", 'rb')
-        pdata = pickle.load(pfile)
-        e1 = pdata['data']
-        pfile.close()
-        del pdata
-    else:
-        e1 = None
-    
-    if 'g0' in quants:
-        pfile = open(srcfolder + "/g0.pkl", 'rb')
-        pdata = pickle.load(pfile)
-        g0 = pdata['data']
-        pfile.close()
-        del pdata
-    else:
-        g0 = None
-    
-    if 'coupling' in quants:
-        gfile = open(srcfolder + "/coupling.pkl", 'rb')
-        gdata = pickle.load(gfile)
-        coupling = gdata['data']
-        gfile.close()
-        del gdata
-    else:
-        coupling = None
-    
-    return times, states, expect, e0, g1, e1, g0, coupling
 
 def combine_batches(folder, quants='all', return_data=True):
     """
@@ -790,7 +678,7 @@ def combine_batches_update(folder, start=None, stop=None, quants='all', return_d
         Coupling strength of the drive tone(s) through time       
     """
     if start == None or stop == None:
-        combine_batches(folder, quants, return_data=True)
+        combine_batches(folder, quants='all', return_data=True)
 
     else:
         if quants == 'all':
@@ -1083,6 +971,116 @@ def combine_batches_update(folder, start=None, stop=None, quants='all', return_d
         if return_data:
             return times_combined, states_combined, expect_combined, e0_combined, g1_combined, e1_combined, g0_combined, coupling_combined
 
+
+def load_data(quants, srcfolder):
+    """
+    Extract the full evolution of specified saved quantities of a simulation.
+    All quantities not specified in quants are returned as NoneType.
+    
+    quants : str, list of str
+        Specific quantities to extract from batches and combine into a file.
+        Can contain 'times', 'states', 'expect', 'g0', 'g1', 'e0', 'e1', and 'coupling'.
+        Default is 'all' which selects all of these.
+    srcfolder : str
+        Path to the simulation folder
+        
+    Returns
+    -------
+    times : np.array
+        All time values
+    states : list of qutip.Qobj
+        All quantum states through time
+    expect : list of list
+        All expected occupation numbers
+    e0 : np.array
+        All probabilities of |e0>
+    g1 : np.array
+        All probabilities of |g1>
+    e1 : np.array
+        All probabilities of |e1>
+    g0 : np.array
+        All probabilities of |g0>
+    coupling : np.array
+        Coupling strength of the drive tone(s) through time
+    """
+    if quants == 'all':
+        quants = ['times', 'states', 'expect', 'g0', 'g1', 'e0', 'e1', 'coupling']
+    if isinstance(quants, str):
+        quants = [quants]
+    
+    if 'times' in quants:
+        tfile = open(srcfolder + "/times.pkl", 'rb')
+        tdata = pickle.load(tfile)
+        times = tdata['data']
+        tfile.close()
+        del tdata
+    else:
+        times = None
+    
+    if 'states' in quants:
+        sfile = open(srcfolder + "/states.pkl", 'rb')
+        sdata = pickle.load(sfile)
+        states = sdata['data']
+        sfile.close()
+        del sdata
+    else:
+        states = None
+    
+    if 'expect' in quants:
+        efile = open(srcfolder + "/expect.pkl", 'rb')
+        edata = pickle.load(efile)
+        expect = edata['data']
+        efile.close()
+        del edata
+    else:
+        expect = None
+    
+    if 'e0' in quants:
+        pfile = open(srcfolder + "/e0.pkl", 'rb')
+        pdata = pickle.load(pfile)
+        e0 = pdata['data']
+        pfile.close()
+        del pdata
+    else:
+        e0 = None
+    
+    if 'g1' in quants:
+        pfile = open(srcfolder + "/g1.pkl", 'rb')
+        pdata = pickle.load(pfile)
+        g1 = pdata['data']
+        pfile.close()
+        del pdata
+    else:
+        g1 = None
+
+    if 'e1' in quants:
+        pfile = open(srcfolder + "/e1.pkl", 'rb')
+        pdata = pickle.load(pfile)
+        e1 = pdata['data']
+        pfile.close()
+        del pdata
+    else:
+        e1 = None
+    
+    if 'g0' in quants:
+        pfile = open(srcfolder + "/g0.pkl", 'rb')
+        pdata = pickle.load(pfile)
+        g0 = pdata['data']
+        pfile.close()
+        del pdata
+    else:
+        g0 = None
+    
+    if 'coupling' in quants:
+        gfile = open(srcfolder + "/coupling.pkl", 'rb')
+        gdata = pickle.load(gfile)
+        coupling = gdata['data']
+        gfile.close()
+        del gdata
+    else:
+        coupling = None
+    
+    return times, states, expect, e0, g1, e1, g0, coupling
 
 def load_data_update(quants, srcfolder, start = None, stop = None):
     """
