@@ -118,7 +118,7 @@ def saveparams(Nq, Nc, Nt, omega_q, omega_c, Ec, g, sb,
                 
         if Nt == 1:
             data.append("sideband drive amplitude        Omega_d  : {} = {} GHz\n".format(kwargs['Omega_d'], kwargs['Omega_d']/2/pi))
-            data.append("sideband drive frequency        omega_d       : {} = {} GHz\n".format(kwargs['omega_d'], kwargs['omega_d']/2/pi))
+            data.append("sideband drive frequency        omega_d  : {} = {} GHz\n".format(kwargs['omega_d'], kwargs['omega_d']/2/pi))
         elif Nt == 2:
             data.append("amplitude of qubit-friendly sideband drive tone   Omega_dq   : {} = {} GHz\n".format(kwargs['Omega_dq'], kwargs['Omega_dq']/2/pi))
             data.append("frequency of qubit-friendly sideband drive tone   omega_dq        : {} = {} GHz\n".format(kwargs['omega_dq'], kwargs['omega_dq']/2/pi))
@@ -678,7 +678,7 @@ def combine_batches_update(folder, start=None, stop=None, quants='all', return_d
         Coupling strength of the drive tone(s) through time       
     """
     if start == None or stop == None:
-        combine_batches(folder, quants='all', return_data=True)
+        combine_batches(folder, quants=quants, return_data=True)
 
     else:
         if quants == 'all':
@@ -1116,7 +1116,84 @@ def load_data_update(quants, srcfolder, start = None, stop = None):
     """
 
     if start == None or stop == None:
-        load_data(quants, srcfolder)
+        if quants == 'all':
+            quants = ['times', 'states', 'expect', 'g0', 'g1', 'e0', 'e1', 'coupling']
+        if isinstance(quants, str):
+            quants = [quants]
+    
+        if 'times' in quants:
+            tfile = open(srcfolder + "/times.pkl", 'rb')
+            tdata = pickle.load(tfile)
+            times = tdata['data']
+            tfile.close()
+            del tdata
+        else:
+            times = None
+    
+        if 'states' in quants:
+            sfile = open(srcfolder + "/states.pkl", 'rb')
+            sdata = pickle.load(sfile)
+            states = sdata['data']
+            sfile.close()
+            del sdata
+        else:
+            states = None
+    
+        if 'expect' in quants:
+            efile = open(srcfolder + "/expect.pkl", 'rb')
+            edata = pickle.load(efile)
+            expect = edata['data']
+            efile.close()
+            del edata
+        else:
+            expect = None
+    
+        if 'e0' in quants:
+            pfile = open(srcfolder + "/e0.pkl", 'rb')
+            pdata = pickle.load(pfile)
+            e0 = pdata['data']
+            pfile.close()
+            del pdata
+        else:
+            e0 = None
+    
+        if 'g1' in quants:
+            pfile = open(srcfolder + "/g1.pkl", 'rb')
+            pdata = pickle.load(pfile)
+            g1 = pdata['data']
+            pfile.close()
+            del pdata
+        else:
+            g1 = None
+
+        if 'e1' in quants:
+            pfile = open(srcfolder + "/e1.pkl", 'rb')
+            pdata = pickle.load(pfile)
+            e1 = pdata['data']
+            pfile.close()
+            del pdata
+        else:
+            e1 = None
+    
+        if 'g0' in quants:
+            pfile = open(srcfolder + "/g0.pkl", 'rb')
+            pdata = pickle.load(pfile)
+            g0 = pdata['data']
+            pfile.close()
+            del pdata
+        else:
+            g0 = None
+    
+        if 'coupling' in quants:
+            gfile = open(srcfolder + "/coupling.pkl", 'rb')
+            gdata = pickle.load(gfile)
+            coupling = gdata['data']
+            gfile.close()
+            del gdata
+        else:
+            coupling = None
+    
+        return times, states, expect, e0, g1, e1, g0, coupling
         
     else:
         if quants == 'all':
