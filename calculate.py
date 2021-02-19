@@ -947,11 +947,11 @@ def sidebandrate_TLS_RWA(omega_q, omega_c, g, H, sb, Nt, **kwargs):
     # Monochromatic drive
     if Nt == 1:
         if sb == 'red' and omega_q > omega_c:
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)**2)
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)**2)
         elif sb == 'red' and omega_q < omega_c:
             sb_rate = 0
         elif sb == 'blue':
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)**2)
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)**2)
         return sb_rate
     
     # Bichromatic drive
@@ -1153,13 +1153,13 @@ def sidebandrate_TLS(omega_q, omega_c, g, H, sb, Nt, **kwargs):
 # SBT calculation
     # Monochromatic drive
     if Nt == 1:
-        eps_m = Omega_d**2/2/(omega_q-omega_d_estimate) + Omega_d**2/2/(omega_q+omega_d_estimate) - omega_q*Omega_d**2/2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate)
+        eps_m = 2*(Omega_d/2)**2/(omega_q-omega_d_estimate) + 2*(Omega_d/2)**2/(omega_q+omega_d_estimate) - omega_q*2*(Omega_d/2)**2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate)
         if sb == 'red' and omega_q > omega_c:
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
         elif sb == 'red' and omega_q < omega_c:
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q+omega_d_estimate)**2) - 2*g*eps_m/2/omega_d_estimate
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q+omega_d_estimate)**2) - 2*g*eps_m/2/omega_d_estimate
         elif sb == 'blue':
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
         return sb_rate
 
     # Bichromatic drive
@@ -1344,11 +1344,11 @@ def sidebandrate_TLS_NoMod(omega_q, omega_c, g, H, sb, Nt, **kwargs):
     if Nt == 1:
         eps_m = 0
         if sb == 'red' and omega_q > omega_c:
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
         elif sb == 'red' and omega_q < omega_c:
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q+omega_d_estimate)**2) - 2*g*eps_m/2/omega_d_estimate
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q+omega_d_estimate)**2) - 2*g*eps_m/2/omega_d_estimate
         elif sb == 'blue':
-            sb_rate = 2*g*(Omega_d**2/4/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
+            sb_rate = 2*g*((Omega_d/2)**2/(omega_q-omega_d_estimate)/(omega_q+omega_d_estimate) + Omega_d**2/4/(omega_q-omega_d_estimate)**2) + 2*g*eps_m/2/omega_d_estimate
         return sb_rate
 
     # Bichromatic drive
